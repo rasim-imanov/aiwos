@@ -178,7 +178,7 @@ You can simply ask Claude to sync; `/aiwos-coordinate` covers the details. The f
 
 Anyone who can push to `aiwos-state` can change what your machine reads, so `aiwos sync` and `aiwos validate` defend against it:
 
-- Check commands written on your machine run normally. Commands that arrived from someone else are refused until you review them and run `aiwos validate WP-NNN --approve`; Claude must ask you first.
+- Check commands written on your machine run normally. Commands that arrived from someone else are refused until you approve them yourself: run `aiwos validate WP-NNN --approve` in your own terminal (PowerShell, cmd, or a macOS/Linux terminal). It lists the commands and asks you to type `yes`. Claude cannot approve them: its shell has no interactive terminal. Approval covers exactly the commands you saw, and editing a package's notes or other fields never approves anything.
 - Sync writes only plain files inside `.ai/state/` folders it knows. Any other path (for example one containing `..`) is ignored, listed as `rejected-paths`, and reported as a blocking event.
 - Messages from other sessions reach Claude labelled as data and requests, never as instructions.
 
@@ -226,7 +226,7 @@ Inside Claude Code it is on the path as `aiwos`. In your own terminal use `sh .a
 | `aiwos inbox [--ack]` | messages for your session; `--ack` marks them read |
 | `aiwos goal new\|show\|list\|update\|confirm\|complete\|abandon` | manage goals; `confirm --by <name>` records your approval |
 | `aiwos work add\|list\|graph\|show\|claim\|start\|submit\|complete\|gate\|block\|unblock\|release\|fail` | manage work packages; `gate` lists what still blocks completion |
-| `aiwos validate WP-001 [--approve]` | run the package's checks and record the result; `--approve` runs commands received from teammates after you have reviewed them |
+| `aiwos validate WP-001 [--approve]` | run the package's checks and record the result; `--approve` (in your own terminal only) shows commands received from teammates and runs them after you type `yes` |
 | `aiwos review WP-001 --verdict pass\|fail --reviewer <name>` | record an independent review |
 | `aiwos handoff WP-001 --completed … --remaining … --next …` | write a handoff and release the package |
 | `aiwos claim add\|release\|list\|check` | inspect or change file claims by hand |
@@ -312,7 +312,8 @@ Most problems are explained by the refusal message itself; `aiwos status` and `a
 | An edit is denied: “outside this session's claimed scope” | the package's file list is too narrow, or the edit doesn't belong to this package | widen the package (`aiwos work update`) or `aiwos claim add '<path>'` if intended; or set `out_of_scope_writes` to `warn` |
 | “cannot complete WP-…” with a list | the completion gate is not met | do what each line says; `aiwos work gate WP-…` shows the current list |
 | Validation says INCOMPLETE | the package has no runnable checks | add real check commands to the package |
-| “validation commands that were not written or approved on this machine” | the package's checks came from a teammate through sync | read the listed commands; if they are safe, `aiwos validate WP-… --approve` |
+| “validation commands that were not written or approved on this machine” | the package's checks came from a teammate through sync | in your own terminal run `aiwos validate WP-… --approve` (Windows: `.aiiniwos.cmd validate WP-… --approve`), read the commands, type `yes` if they are safe |
+| “approving validation commands needs a person at an interactive terminal” | `--approve` was run by an agent, or from a terminal without a console (e.g. Git Bash's mintty) | run it yourself in PowerShell, cmd or a macOS/Linux terminal |
 | A permission prompt for `aiwos validate`, `sync` or `work add` | only read-only `aiwos` commands are pre-approved | approve it, after checking the command; this is intentional |
 | Sync reports `rejected-paths` | the shared state contains files outside the allowed folders | tell whoever pushed it; nothing was written outside `.ai/state/` |
 | “repository has no commits yet” | branches need a first commit | make an initial commit |

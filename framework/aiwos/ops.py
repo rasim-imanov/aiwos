@@ -274,7 +274,10 @@ def work_update(ctx, wid, patch):
         if errors:
             raise AiwosError("update rejected: " + "; ".join(errors))
         st.save_work(new)
-        st.approve_commands([c["run"] for c in new["validation"] if c.get("run")], ctx.actor)
+        # Approve only commands written in THIS patch. Commands inherited from the stored definition may have
+        # arrived via sync; an unrelated edit (e.g. notes) must not silently approve them.
+        st.approve_commands([c["run"] for c in _clean_list(patch.get("validation"))
+                             if isinstance(c, dict) and c.get("run")], ctx.actor)
     emit(ctx, "WORK_UPDATED", ["goal:" + new["goal"], "work:" + wid], {"work_id": wid, "fields": sorted(patch)}, "IMPORTANT")
     return new, [w for w in warnings if wid in w["work"]]
 

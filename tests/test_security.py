@@ -37,7 +37,22 @@ class ValidationCommandTrust(ProjectCase):
         self.assertEqual(r.returncode, 2)
         self.assertIn("--approve", r.stderr)
         self.assertFalse(os.path.exists(marker))
-        run_checks(a, "WP-001", approve=True)          # explicit, reviewed approval
+        # An agent (no interactive terminal) cannot approve, even with --approve.
+        r = self.cli("validate", "WP-001", "--approve", session="S-A", stdin="yes\n")
+        self.assertEqual(r.returncode, 2)
+        self.assertIn("interactive terminal", r.stderr)
+        self.assertFalse(os.path.exists(marker))
+        # An unrelated local edit must not approve the inherited, foreign command.
+        ops.work_update(a, "WP-001", {"notes": "harmless edit"})
+        ops.work_submit(a, "WP-001")
+        with self.assertRaisesRegex(AiwosError, "not written or approved"):
+            run_checks(a, "WP-001")
+        self.assertFalse(os.path.exists(marker))
+        # Approval is bound to the exact commands a person saw.
+        with self.assertRaisesRegex(AiwosError, "not written or approved"):
+            run_checks(a, "WP-001", approved=["some other command"])
+        evil = self.store.find_work("WP-001")["validation"][0]["run"]
+        run_checks(a, "WP-001", approved=[evil])       # what the CLI does after a person typed 'yes'
         self.assertTrue(os.path.exists(marker))
 
     def test_locally_authored_commands_run_without_extra_step(self):

@@ -18,21 +18,29 @@ def _tail(text, n):
     return text if len(text) <= n else "…" + text[-n:]
 
 
-def run_checks(ctx, wid, only=None, approve=False):
+def pending_commands(store, wid, only=None):
+    """Validation commands of `wid` that were neither written nor approved on this machine."""
+    wp = store.find_work(wid)
+    commands = [c["run"] for c in wp.get("validation", []) if c.get("run") and (not only or c["name"] in only)]
+    return store.unapproved_commands(commands)
+
+
+def run_checks(ctx, wid, only=None, approved=()):
+    """`approved` = the exact command strings a person confirmed (the CLI requires an interactive terminal for
+    that). Approval is bound to those strings, so a definition that changes in between is still refused."""
     st = ctx.store
     v = View(st)
     if wid not in v.work:
         raise AiwosError("unknown work package %s" % wid)
     wp, s = v.work[wid], v.state[wid]
-    commands = [c["run"] for c in wp.get("validation", []) if c.get("run") and (not only or c["name"] in only)]
-    pending = st.unapproved_commands(commands)
-    if pending and not approve:
+    pending = [c for c in pending_commands(st, wid, only) if c not in set(approved or ())]
+    if pending:
         raise AiwosError(
             "%s has validation commands that were not written or approved on this machine (e.g. received via "
-            "`aiwos sync`). Review them, then run `aiwos validate %s --approve` to approve and run:\n  %s"
-            % (wid, wid, "\n  ".join(pending)))
-    if pending:
-        st.approve_commands(pending, ctx.actor)
+            "`aiwos sync`). A person must review and approve them in their own terminal: "
+            "`aiwos validate %s --approve`. Commands:\n  %s" % (wid, wid, "\n  ".join(pending)))
+    if approved:
+        st.approve_commands(list(approved), ctx.actor)
     cwd = st.root
     if s.get("worktree"):
         wt = os.path.join(st.main_root, *s["worktree"].split("/"))

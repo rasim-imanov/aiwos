@@ -1,6 +1,6 @@
 {
   "version": "0.1.0",
-  "installed_at": "2026-10-05T20:15:51.655Z",
+  "installed_at": "2026-10-05T20:21:57.437Z",
   "files": {
     ".ai/bin/aiwos": "37c5bc5703df4ee18388792458328a134845db1cfd401464e31c8ab04e446bac",
     ".ai/bin/aiwos.cmd": "688c2a35fda49090d8a002783578de8224df98e62e655a752d4fc35dfa35ff9c",
@@ -11,11 +11,11 @@
     ".claude/agents/aiwos-worker.md": "2ebad7bab7f85976692b927e915a5bdb3ec47bae287a5b666c8b189444c6f6d6",
     ".claude/skills/aiwos-adopt/SKILL.md": "d4a2564c377c59cc3962409e748da39c4dd9bd93095ee6243a106eb47862f808",
     ".claude/skills/aiwos-cleanup/SKILL.md": "ff15382f5fcbf3baaae37508dbbf32be03aa36f9160c3a23001b924765fa29c3",
-    ".claude/skills/aiwos-coordinate/SKILL.md": "a05f9aa855d0879fc3b1bf960799c16dfb0db50e33bd6b0653efe2d31f3bf2d4",
+    ".claude/skills/aiwos-coordinate/SKILL.md": "4627b7d1e6f9226feb7ae4ebdd42a3f19b85cd9b199c317a379b6da69ada252a",
     ".claude/skills/aiwos-goal/SKILL.md": "1af4fa0e4b208a3b70a0a98182483b0b8890972e8ea1dc6c73e3c2da686c2ed4",
     ".claude/skills/aiwos-handoff/SKILL.md": "c0cb6c263a2ac74fcac86d7da32831cf27c2cddad15993821f9a1703cf2bd252",
     ".claude/skills/aiwos-plan/SKILL.md": "8e5797724c60e6deba5bac1a583ab425b5406f42331c3195fd37b30dff1e375d",
-    ".claude/skills/aiwos-validate/SKILL.md": "a88c58cf89db005f10660f5a9e60585a2f0f054d9ba446aa75bfb93511883247",
+    ".claude/skills/aiwos-validate/SKILL.md": "7172dddac57886bdedc115225fdb4f33db3aea58193ea050ecde4c0835e8dbb6",
     ".claude/skills/aiwos-work/SKILL.md": "9784b4b484ee7d1ee699254d0bf05590c7e976b113f9605d6e1887ffa296583b"
   }
 }

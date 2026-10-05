@@ -404,10 +404,39 @@ def cmd_sync(args):
 
 # ---------------------------------------------------------------- validation, review, routing
 
+def _human_approves(st, wid, only):
+    """Approval of foreign validation commands is a human decision, so it needs an interactive terminal.
+    Claude Code's shell has none, so an agent cannot approve its way past this check.
+    Returns the exact commands the person approved, () if none were pending, None if not approved."""
+    from .validation import pending_commands
+    pending = pending_commands(st, wid, only)
+    if not pending:
+        return ()
+    if not (sys.stdin.isatty() and sys.stdout.isatty()):
+        print("aiwos: approving validation commands needs a person at an interactive terminal.\n"
+              "Run this yourself in PowerShell, cmd or a macOS/Linux terminal (not through an AI agent):\n"
+              "  aiwos validate %s --approve      (Windows: .ai\\bin\\aiwos.cmd validate %s --approve)\n"
+              "Commands awaiting approval:\n  %s" % (wid, wid, "\n  ".join(pending)), file=sys.stderr)
+        return None
+    print("These validation commands for %s were not written on this machine. They will run as code here:\n" % wid)
+    for c in pending:
+        print("  " + c)
+    answer = input("\nType 'yes' to approve and run them: ").strip().lower()
+    if answer != "yes":
+        print("not approved; nothing was run", file=sys.stderr)
+        return None
+    return tuple(pending)
+
+
 def cmd_validate(args):
     from .validation import contradictions, run_checks
     st = _store()
-    rec = run_checks(_ctx(args, st), args.work_id, _split(args.only) or None, approve=args.approve)
+    approved = ()
+    if args.approve:
+        approved = _human_approves(st, args.work_id, _split(args.only) or None)
+        if approved is None:
+            return 2
+    rec = run_checks(_ctx(args, st), args.work_id, _split(args.only) or None, approved=approved)
     lines = ["%s %s %s" % (rec["id"], "PASSED" if rec["passed"] else ("INCOMPLETE" if rec["incomplete"] else "FAILED"), args.work_id)]
     for r in rec["results"]:
         lines.append("  [%s] %-9s %s%s" % ("ok" if r["passed"] else "FAIL", r["layer"], r["name"],
