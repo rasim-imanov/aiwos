@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "lease_ttl_seconds": 1800,
+  "enforcement": {
+    "out_of_scope_writes": "deny"
+  },
+  "sync": {
+    "remote": null
+  },
+  "validation": {
+    "review_required_for_risk": [
+      "medium",
+      "high"
+    ]
+  },
+  "cleanup": {
+    "allowed_root_entries": [
+      "framework",
+      "tests",
+      "instructions.md"
+    ]
+  }
+}

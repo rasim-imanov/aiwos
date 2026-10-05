@@ -1,0 +1,3 @@
+# keep LF everywhere: the sh launcher breaks with CRLF (core.autocrlf)
+* text=auto eol=lf
+*.cmd text eol=crlf

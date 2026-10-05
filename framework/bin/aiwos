@@ -1,0 +1,27 @@
+#!/bin/sh
+# AI Work OS launcher: finds Python 3.9+ and runs the vendored runtime in ../runtime.
+here=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+rt="$here/runtime"
+if [ ! -f "$rt/aiwos_main.py" ]; then
+  # A git worktree created before the framework was committed: use the main worktree's copy.
+  common=$(git -C "$here/.." rev-parse --path-format=absolute --git-common-dir 2>/dev/null)
+  [ -n "$common" ] && rt="$(dirname "$common")/.ai/runtime"
+fi
+if [ ! -f "$rt/aiwos_main.py" ] && [ -f "$here/../framework/aiwos_main.py" ]; then
+  # The framework's own source repository (self-hosting): run straight from framework/.
+  rt="$here/../framework"
+fi
+py="${AIWOS_PYTHON:-}"
+if [ -z "$py" ] && [ -f "$here/local.json" ]; then
+  py=$(sed -n 's/.*"python": *"\([^"]*\)".*/\1/p' "$here/local.json" | head -n 1)
+fi
+if [ -z "$py" ] || ! command -v "$py" >/dev/null 2>&1; then
+  py=""
+  for c in python3 python py; do
+    if command -v "$c" >/dev/null 2>&1 && "$c" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 9) else 1)' >/dev/null 2>&1; then
+      py="$c"; break
+    fi
+  done
+fi
+if [ -z "$py" ]; then echo "aiwos: Python 3.9+ not found (set AIWOS_PYTHON)" >&2; exit 1; fi
+exec "$py" "$rt/aiwos_main.py" "$@"

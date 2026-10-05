@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+# self-hosting: the vendored runtime is a copy of framework/, do not commit it twice
+.ai/runtime/

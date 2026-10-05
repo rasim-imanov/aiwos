@@ -1,0 +1,7 @@
+# AI Work OS: machine-local and shared-via-sync state is not committed
+state/
+worktrees/
+backups/
+local.json
+__pycache__/
+*.pyc

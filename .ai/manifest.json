@@ -1,0 +1,22 @@
+{
+  "version": "0.1.0",
+  "installed_at": "2026-10-05T20:06:51.810Z",
+  "source": "C:\\Users\\imano\\projects\\ai\\work-os\\framework",
+  "files": {
+    ".ai/bin/aiwos": "37c5bc5703df4ee18388792458328a134845db1cfd401464e31c8ab04e446bac",
+    ".ai/bin/aiwos.cmd": "688c2a35fda49090d8a002783578de8224df98e62e655a752d4fc35dfa35ff9c",
+    ".ai/.gitattributes": "35e2efb0521713a7455c82501676bc47e8230b4982349aa72ca31a0677175735",
+    ".ai/.gitignore": "1747f5dbe9c0587fb2d30d2c6024844ad3bd82a382ef77e96106580d9878c462",
+    ".claude/agents/aiwos-researcher.md": "871134ca956bb12bb608db147331a1b75c8c236164e3a29ea9d810463ee6bb5e",
+    ".claude/agents/aiwos-reviewer.md": "bcbe0a827fc24ab34b2e57f9dd019a46276d24782ebdff57df2ead6ef97e2ba7",
+    ".claude/agents/aiwos-worker.md": "2ebad7bab7f85976692b927e915a5bdb3ec47bae287a5b666c8b189444c6f6d6",
+    ".claude/skills/aiwos-adopt/SKILL.md": "d4a2564c377c59cc3962409e748da39c4dd9bd93095ee6243a106eb47862f808",
+    ".claude/skills/aiwos-cleanup/SKILL.md": "ff15382f5fcbf3baaae37508dbbf32be03aa36f9160c3a23001b924765fa29c3",
+    ".claude/skills/aiwos-coordinate/SKILL.md": "3f6868bce92ea783048b3a30a8d63be5ed5dca4da5166f88395589882817f090",
+    ".claude/skills/aiwos-goal/SKILL.md": "1af4fa0e4b208a3b70a0a98182483b0b8890972e8ea1dc6c73e3c2da686c2ed4",
+    ".claude/skills/aiwos-handoff/SKILL.md": "c0cb6c263a2ac74fcac86d7da32831cf27c2cddad15993821f9a1703cf2bd252",
+    ".claude/skills/aiwos-plan/SKILL.md": "8e5797724c60e6deba5bac1a583ab425b5406f42331c3195fd37b30dff1e375d",
+    ".claude/skills/aiwos-validate/SKILL.md": "f7f4d792a7bb0594f3c4115c5289ce9b7943954943d123f590b3063b6becb240",
+    ".claude/skills/aiwos-work/SKILL.md": "9784b4b484ee7d1ee699254d0bf05590c7e976b113f9605d6e1887ffa296583b"
+  }
+}
