@@ -31,7 +31,7 @@ What the installer does (non-destructive: everything it modifies is backed up to
 | `.ai/config.json` | lease time, enforcement mode, sync remote, review policy, model routing |
 | `.ai/state/` (git-ignored) | coordination state: goals, work, sessions, claims, events, validation, handoffs |
 | `.claude/skills/aiwos-*`, `.claude/agents/aiwos-*` | lifecycle skills and reviewer/researcher/worker subagents |
-| `.claude/settings.json` | five hooks merged in (your existing hooks and settings are kept) + permission to run `.ai/bin/aiwos` |
+| `.claude/settings.json` | five hooks merged in (your existing hooks and settings are kept) + permission to run read-only `aiwos` commands without a prompt |
 | `CLAUDE.md` | a ~30-line rules block between `<!-- aiwos:begin/end -->` markers (your text is kept) |
 
 Upgrade: run `init` again (files you modified are kept and reported). Remove: `aiwos uninstall` (keeps your
@@ -79,7 +79,7 @@ aiwos doctor | audit | metrics | trace <file>
 ## Develop the framework
 
 ```bash
-python3 -m unittest discover -s tests      # 52 tests; uses temporary git repos, needs git on PATH
+python3 -m unittest discover -s tests      # 57 tests; uses temporary git repos, needs git on PATH
 ```
 
 The source lives in `framework/` (`aiwos/` package, `claude/` skills and agents, `templates/`, `bin/`). The

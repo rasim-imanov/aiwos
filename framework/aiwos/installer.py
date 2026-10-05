@@ -25,7 +25,15 @@ HOOKS = [
     ("PostToolUse", WRITE_TOOLS, "post-write", 10),
     ("SessionEnd", None, "session-end", 10),
 ]
-PERMISSIONS = ["Bash(.ai/bin/aiwos *)", "Bash(sh .ai/bin/aiwos *)"]
+# Only read-only subcommands are pre-approved. Anything that runs commands (validate), writes outside
+# state (init, uninstall), publishes (sync) or defines checks (work add/update, acp) keeps the normal
+# permission prompt, so the allowlist cannot be used to bypass it.
+READ_ONLY = ["status", "next", "context", "inbox", "where", "doctor", "audit", "metrics", "trace", "route",
+             "events", "goal show", "goal list", "work list", "work graph", "work show", "work gate",
+             "claim list", "claim check", "session list"]
+PERMISSIONS = ["Bash(%s %s%s)" % (exe, sub, tail) for exe in ("aiwos", ".ai/bin/aiwos")
+               for sub in READ_ONLY for tail in ("", " *")]
+LEGACY_PERMISSIONS = ["Bash(.ai/bin/aiwos *)", "Bash(sh .ai/bin/aiwos *)"]  # v0.1 grants, too broad
 RUNTIME_PARTS = ["aiwos", "aiwos_main.py", "bin", "claude", "templates"]
 
 
@@ -110,8 +118,9 @@ class Installer:
         self._settings()
         self._claude_md()
         if not self.dry:
+            # No source path here: the manifest is committed, and an absolute path would leak the local username.
             write_text_atomic(self.manifest_path, dumps({"version": __version__, "installed_at": iso(),
-                                                         "source": FRAMEWORK_DIR, "files": self.files}))
+                                                         "files": self.files}))
         return self.log
 
     def _runtime(self):
@@ -179,6 +188,7 @@ class Installer:
                     g = {"matcher": matcher, "hooks": g["hooks"]}
                 groups.append(g)
         perms = doc.setdefault("permissions", {}).setdefault("allow", [])
+        perms[:] = [p for p in perms if p not in LEGACY_PERMISSIONS]
         for p in PERMISSIONS:
             if p not in perms:
                 perms.append(p)
@@ -233,7 +243,7 @@ class Installer:
                     del doc["hooks"][event]
             allow = (doc.get("permissions") or {}).get("allow")
             if allow:
-                doc["permissions"]["allow"] = [p for p in allow if p not in PERMISSIONS]
+                doc["permissions"]["allow"] = [p for p in allow if p not in PERMISSIONS + LEGACY_PERMISSIONS]
             self.log.append("CLEAN .claude/settings.json")
             if not self.dry:
                 write_text_atomic(sp, dumps(doc))

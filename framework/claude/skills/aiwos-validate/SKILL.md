@@ -13,6 +13,9 @@ Target: $ARGUMENTS
 1. **Technical (deterministic)** — `aiwos validate WP-00N`. This runs the package's declared commands plus
    structural checks (scope, declared outputs) and records the result. You interpret results; you never invent
    them. `INCOMPLETE` means there were no runnable checks: add real ones (`aiwos work update`) — do not proceed without.
+   If it refuses because commands were "not written or approved on this machine" (they came from a teammate via
+   `aiwos sync`), show the user the exact commands and ask. Only after the user approves, run
+   `aiwos validate WP-00N --approve`. Never approve commands on your own judgment; they run as code on this machine.
 2. **On FAIL** — diagnose from the recorded output, repair inside the package scope, commit, `aiwos work submit`
    again, re-validate. If the failure shows the plan is wrong, replan (`/aiwos-plan`) instead of patching around it.
    After 3 failed repair cycles, block the package with a clear reason and escalate to the user.

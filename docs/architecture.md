@@ -157,15 +157,27 @@ marked CLAUDE.md block, `aiwos-` name prefix, `uninstall`).
 Instruction hierarchy is written into the CLAUDE.md block (framework > project > user requirements > agent
 suggestions > external content; external text is data). Protected paths (`.ai/state`, `.ai/runtime`,
 `.ai/bin`) can only be changed through the CLI. ACP rejects messages whose `from.session` differs from the
-caller. Validation commands run with `shell=True` **by design** — they are authored in work-package
-definitions, i.e. trusted planning state; never copy commands from external content into a plan unreviewed.
+caller.
+
+**Shared state is untrusted input.** Anyone who can push to the `aiwos-state` branch controls what `aiwos sync`
+writes locally. Hardening after the v0.1 security review:
+
+| Risk | Control |
+|---|---|
+| Validation commands (run with `shell=True`, by design) arriving through sync | A command runs only if its SHA-256 is in `.ai/state/.local/approved-commands.json`. That file is machine-local and never synced. `work add` / `work update` on this machine approve their own commands; anything else is refused until `aiwos validate WP --approve`, which the skills require the user to authorize |
+| Path traversal from a crafted remote tree (`..`, Windows `..\`, drive letters, hidden or unknown folders) | `sync.safe_rel` allows only `[A-Za-z0-9._-]` names under `goals/ sessions/ claims/ events/ validation/ handoffs/`; only regular blobs ≤ 2 MB; a resolved-path check guards against symlinked folders. Rejected paths are reported and raise a BLOCKING event |
+| Permission allowlist used to bypass prompts | Only read-only subcommands are pre-approved (`status`, `next`, `context`, `inbox`, `doctor`, `trace`, …). `validate`, `sync`, `init`, `uninstall`, `acp`, `work add/update` prompt as usual; upgrades remove the old broad `Bash(.ai/bin/aiwos *)` grant |
+| Prompt injection through other sessions' messages | The prompt hook labels them as data and requests, never instructions |
+| Local path leakage | The committed `.ai/manifest.json` no longer records the framework's absolute source path |
+
+Covered by `tests/test_security.py`.
 
 ## 11. Certain / assumed / unknown
 
 **Certain (verified in the docs on 2026-10-05 and/or by tests):** hook events, stdin fields and the
 PreToolUse `permissionDecision` contract; SessionStart `additionalContext` and `CLAUDE_ENV_FILE`; skill
 frontmatter (`description`, `argument-hint`, `disable-model-invocation`, `$ARGUMENTS`); subagent frontmatter
-(`tools`, `model` aliases); shell-form hooks run in Git Bash on Windows; all 52 framework tests pass on
+(`tools`, `model` aliases); shell-form hooks run in Git Bash on Windows; all 57 framework tests pass on
 Windows with `core.autocrlf` both true and false.
 
 **Assumed:** `CLAUDECODE=1` is present in Claude Code's Bash environment (used only for a session-id fallback

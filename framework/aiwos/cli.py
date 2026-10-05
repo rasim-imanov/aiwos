@@ -391,10 +391,14 @@ def cmd_sync(args):
     for c in r["conflicts"]:
         ops.emit(_ctx(args, st), "CONFLICT_DETECTED", ["goal:" + c["path"].split("/")[1]], dict(c, stage="sync"), "BLOCKING")
     from .model import View
+    if r["rejected_paths"]:
+        ops.emit(_ctx(args, st), "CONFLICT_DETECTED", [], {"stage": "sync", "rejected_paths": r["rejected_paths"][:50],
+                                                          "reason": "unsafe paths in remote state were ignored"}, "BLOCKING")
     contested = View(st).contested
     _emit_out(args, dict(r, contested=len(contested)),
-              "sync: fetched=%s merged=%d committed=%s pushed=%s conflicts=%d contested-claims=%d" % (
-                  r["fetched"], len(r["merged_files"]), r["committed"], r["pushed"], len(r["conflicts"]), len(contested)))
+              "sync: fetched=%s merged=%d committed=%s pushed=%s conflicts=%d contested-claims=%d rejected-paths=%d" % (
+                  r["fetched"], len(r["merged_files"]), r["committed"], r["pushed"], len(r["conflicts"]), len(contested),
+                  len(r["rejected_paths"])))
     return 0
 
 
@@ -403,7 +407,7 @@ def cmd_sync(args):
 def cmd_validate(args):
     from .validation import contradictions, run_checks
     st = _store()
-    rec = run_checks(_ctx(args, st), args.work_id, _split(args.only) or None)
+    rec = run_checks(_ctx(args, st), args.work_id, _split(args.only) or None, approve=args.approve)
     lines = ["%s %s %s" % (rec["id"], "PASSED" if rec["passed"] else ("INCOMPLETE" if rec["incomplete"] else "FAILED"), args.work_id)]
     for r in rec["results"]:
         lines.append("  [%s] %-9s %s%s" % ("ok" if r["passed"] else "FAIL", r["layer"], r["name"],
@@ -702,6 +706,8 @@ def build_parser():
     s = sub.add_parser("validate", parents=[common], help="run deterministic validation for a work package")
     s.add_argument("work_id")
     s.add_argument("--only")
+    s.add_argument("--approve", action="store_true",
+                   help="approve (after reviewing) validation commands not authored on this machine")
     s.set_defaults(fn=cmd_validate)
     s = sub.add_parser("review", parents=[common], help="record an independent review verdict")
     s.add_argument("work_id")

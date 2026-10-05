@@ -11,6 +11,7 @@ Concurrent pushes are serialized by Git itself: a rejected push re-fetches and r
 
 import json
 import os
+import re
 import subprocess
 
 from .gitops import git
@@ -52,14 +53,34 @@ def _blob(store, sha):
     return r.stdout.decode("utf-8", errors="replace")
 
 
-def _remote_tree(store, sha):
-    r = git(["ls-tree", "-r", "-z", sha], store.main_root)
+SYNCED_DIRS = ("goals", "sessions", "claims", "events", "validation", "handoffs")
+_SAFE_PART = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9._-]{0,127}$")
+MAX_SYNCED_FILE = 2 * 1024 * 1024
+
+
+def safe_rel(rel):
+    """Remote tree paths are untrusted: only plain names inside the known state folders may be written.
+    Rejects '..', absolute or drive paths, backslashes, hidden names and anything outside SYNCED_DIRS."""
+    parts = rel.split("/")
+    if len(parts) < 2 or len(parts) > 6 or parts[0] not in SYNCED_DIRS:
+        return False
+    return all(_SAFE_PART.match(p) and p not in (".", "..") for p in parts)
+
+
+def _remote_tree(store, sha, rejected=None):
+    r = git(["ls-tree", "-r", "-z", "--long", sha], store.main_root)
     out = {}
     for entry in r.stdout.split("\0"):
         if not entry:
             continue
         meta, path = entry.split("\t", 1)
-        out[path] = meta.split()[2]
+        mode, otype, blob, size = meta.split()[:4]
+        if otype != "blob" or mode not in ("100644", "100755") or not safe_rel(path) \
+                or not size.isdigit() or int(size) > MAX_SYNCED_FILE:
+            if rejected is not None:
+                rejected.append(path)
+            continue
+        out[path] = blob
     return out
 
 
@@ -140,7 +161,7 @@ def sync(store, push=True, remote=None, attempts=4):
     remote = remote or store.config["sync"].get("remote")
     branch = store.config["sync"]["branch"]
     report = {"remote": remote, "fetched": False, "merged_files": [], "committed": False, "pushed": False,
-              "conflicts": []}
+              "conflicts": [], "rejected_paths": []}
     for attempt in range(attempts):
         with store.lock():
             remote_sha = None
@@ -153,12 +174,16 @@ def sync(store, push=True, remote=None, attempts=4):
                     raise AiwosError("fetch from %s failed: %s" % (remote, r.stderr.strip()))
             local_sha = _rev(store, LOCAL_REF)
             if remote_sha and remote_sha != local_sha:
-                rtree = _remote_tree(store, remote_sha)
+                rtree = _remote_tree(store, remote_sha, report["rejected_paths"])
+                real_state = os.path.realpath(store.state)
                 lhash = _hash_local(store, [p for p in rtree if os.path.exists(os.path.join(store.state, *p.split("/")))])
                 for rel, blob in rtree.items():
                     if lhash.get(rel) == blob:
                         continue
                     lp = os.path.join(store.state, *rel.split("/"))
+                    if os.path.commonpath([real_state, os.path.realpath(lp)]) != real_state:
+                        report["rejected_paths"].append(rel)  # defence in depth, e.g. a symlinked folder
+                        continue
                     ltext = read_text(lp) if os.path.exists(lp) else None
                     rtext = _blob(store, blob)
                     merged = merge_file(rel, ltext, rtext, report["conflicts"])

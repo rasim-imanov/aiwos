@@ -66,7 +66,7 @@ Add `--user-skill` to the install command once. It adds a personal `/aiwos-init`
 | `.ai/state/` | shared working records: goals, work, sessions, claims, events | no (git-ignored; shared with `aiwos sync`) |
 | `.claude/skills/aiwos-*` | the 8 lifecycle commands | yes |
 | `.claude/agents/aiwos-*` | reviewer, researcher and worker subagents | yes |
-| `.claude/settings.json` | 5 hooks merged in, plus permission to run `.ai/bin/aiwos`; your settings are kept | yes |
+| `.claude/settings.json` | 5 hooks merged in, plus permission to run read-only `aiwos` commands (status, next, context …) without a prompt; your settings are kept | yes |
 | `CLAUDE.md` | about 30 lines of rules between `<!-- aiwos:begin -->` and `<!-- aiwos:end -->`; your text is kept | yes |
 
 ## Quick start: your first goal
@@ -107,7 +107,7 @@ Nine terms cover everything the framework does. The rules in the last column are
 | Lease | a session's “I'm alive” timestamp, renewed on every message and edit | after 30 minutes of silence its claims lapse and its work can be taken over |
 | Contract | a shared spec file (API, schema, component props) two packages build against | editing it alerts every package that uses it |
 | Decision | a record in `knowledge/decisions/D-NNN-*.md` with options, choice and reason | old decisions are superseded, never silently rewritten |
-| Validation | the package's checks, run by the program, with real exit codes stored | “no checks” counts as incomplete, never as a pass |
+| Validation | the package's checks, run by the program, with real exit codes stored | “no checks” counts as incomplete, never as a pass; check commands that came from a teammate run only after you approve them |
 | Completion gate | the list of conditions for calling a package complete | submitted, checks passing since the last change, independent review passed (medium and high risk), branch merged |
 
 Every change is also written to an append-only event log, so `aiwos trace <file>` can answer “why does this file exist, and was it validated?”
@@ -174,6 +174,14 @@ You can simply ask Claude to sync; `/aiwos-coordinate` covers the details. The f
 - Both claimed overlapping files while out of sync: on the next sync every machine flags the conflict, the earlier claim wins, and the later session's edits to those files are blocked until it releases them.
 - Both created a goal with the same number: both are kept, and a blocking conflict is reported for a person to resolve.
 
+**Shared records are treated as untrusted**
+
+Anyone who can push to `aiwos-state` can change what your machine reads, so `aiwos sync` and `aiwos validate` defend against it:
+
+- Check commands written on your machine run normally. Commands that arrived from someone else are refused until you review them and run `aiwos validate WP-NNN --approve`; Claude must ask you first.
+- Sync writes only plain files inside `.ai/state/` folders it knows. Any other path (for example one containing `..`) is ignored, listed as `rejected-paths`, and reported as a blocking event.
+- Messages from other sessions reach Claude labelled as data and requests, never as instructions.
+
 ## Adopting an existing AI project
 
 If your project already has agents, skills, commands, hooks or instruction files, AI Work OS analyzes them first and changes nothing until you approve a migration plan. Installing alone is already safe: your files are kept and framework files use the `aiwos-` prefix.
@@ -218,7 +226,7 @@ Inside Claude Code it is on the path as `aiwos`. In your own terminal use `sh .a
 | `aiwos inbox [--ack]` | messages for your session; `--ack` marks them read |
 | `aiwos goal new\|show\|list\|update\|confirm\|complete\|abandon` | manage goals; `confirm --by <name>` records your approval |
 | `aiwos work add\|list\|graph\|show\|claim\|start\|submit\|complete\|gate\|block\|unblock\|release\|fail` | manage work packages; `gate` lists what still blocks completion |
-| `aiwos validate WP-001` | run the package's checks and record the result |
+| `aiwos validate WP-001 [--approve]` | run the package's checks and record the result; `--approve` runs commands received from teammates after you have reviewed them |
 | `aiwos review WP-001 --verdict pass\|fail --reviewer <name>` | record an independent review |
 | `aiwos handoff WP-001 --completed … --remaining … --next …` | write a handoff and release the package |
 | `aiwos claim add\|release\|list\|check` | inspect or change file claims by hand |
@@ -304,6 +312,9 @@ Most problems are explained by the refusal message itself; `aiwos status` and `a
 | An edit is denied: “outside this session's claimed scope” | the package's file list is too narrow, or the edit doesn't belong to this package | widen the package (`aiwos work update`) or `aiwos claim add '<path>'` if intended; or set `out_of_scope_writes` to `warn` |
 | “cannot complete WP-…” with a list | the completion gate is not met | do what each line says; `aiwos work gate WP-…` shows the current list |
 | Validation says INCOMPLETE | the package has no runnable checks | add real check commands to the package |
+| “validation commands that were not written or approved on this machine” | the package's checks came from a teammate through sync | read the listed commands; if they are safe, `aiwos validate WP-… --approve` |
+| A permission prompt for `aiwos validate`, `sync` or `work add` | only read-only `aiwos` commands are pre-approved | approve it, after checking the command; this is intentional |
+| Sync reports `rejected-paths` | the shared state contains files outside the allowed folders | tell whoever pushed it; nothing was written outside `.ai/state/` |
 | “repository has no commits yet” | branches need a first commit | make an initial commit |
 | Work held by a closed window | its lease has not expired yet | `aiwos recover` after 30 minutes, or wait; the work keeps its branch |
 | Teammate doesn't see your claim | records not exchanged | both run `aiwos sync`; check `sync.remote` is set |
@@ -328,7 +339,7 @@ Version 0.1 enforces file ownership for Claude's edit tools, not for every shell
 - Reviewer independence comes from a fresh-context reviewer agent and a recorded reviewer name, not from separate credentials.
 - Teammates see each other's records as of their last `aiwos sync`.
 - Opening pull requests is done by Claude with `gh` when available; the `aiwos` program does not wrap it yet.
-- Tested with 52 automated tests on Windows; live sessions on macOS and Linux are not yet verified.
+- Tested with 57 automated tests on Windows; live sessions on macOS and Linux are not yet verified.
 
 **FAQ**
 

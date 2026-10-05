@@ -287,6 +287,23 @@ class Store:
         return read_json(self.p("validation", vid + ".json"))
 
     # ------------------------------------------------------------ local (unsynced) state
+    # Validation commands are code. Only commands authored on this machine (work add/update) or
+    # explicitly approved here may run; definitions that arrived through `aiwos sync` may not.
+    def approved_commands(self):
+        return (read_json(self.p(".local", "approved-commands.json"), {}) or {}).get("sha256", {})
+
+    def approve_commands(self, commands, by):
+        from .util import sha256_bytes
+        doc = {"sha256": self.approved_commands()}
+        for c in commands:
+            doc["sha256"][sha256_bytes(c.encode("utf-8"))] = {"by": by, "at": iso(), "command": c[:200]}
+        write_json(self.p(".local", "approved-commands.json"), doc)
+
+    def unapproved_commands(self, commands):
+        from .util import sha256_bytes
+        ok = self.approved_commands()
+        return [c for c in commands if sha256_bytes(c.encode("utf-8")) not in ok]
+
     def cursor(self, sid):
         return read_json(self.p(".local", "cursors", sid + ".json"), {}) or {}
 

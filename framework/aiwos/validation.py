@@ -18,12 +18,21 @@ def _tail(text, n):
     return text if len(text) <= n else "…" + text[-n:]
 
 
-def run_checks(ctx, wid, only=None):
+def run_checks(ctx, wid, only=None, approve=False):
     st = ctx.store
     v = View(st)
     if wid not in v.work:
         raise AiwosError("unknown work package %s" % wid)
     wp, s = v.work[wid], v.state[wid]
+    commands = [c["run"] for c in wp.get("validation", []) if c.get("run") and (not only or c["name"] in only)]
+    pending = st.unapproved_commands(commands)
+    if pending and not approve:
+        raise AiwosError(
+            "%s has validation commands that were not written or approved on this machine (e.g. received via "
+            "`aiwos sync`). Review them, then run `aiwos validate %s --approve` to approve and run:\n  %s"
+            % (wid, wid, "\n  ".join(pending)))
+    if pending:
+        st.approve_commands(pending, ctx.actor)
     cwd = st.root
     if s.get("worktree"):
         wt = os.path.join(st.main_root, *s["worktree"].split("/"))

@@ -248,6 +248,8 @@ def work_add(ctx, gid, items):
         for wp in new:
             wp["created_at"] = iso()
             st.save_work(wp)
+            # authored here (this call went through the user's permission prompt): its checks may run
+            st.approve_commands([c["run"] for c in wp["validation"] if c.get("run")], ctx.actor)
     for wp in new:
         emit(ctx, "WORK_CREATED", ["goal:" + gid, "work:" + wp["id"]], {"work_id": wp["id"], "title": wp["title"]})
     new_ids = {w["id"] for w in new}
@@ -272,6 +274,7 @@ def work_update(ctx, wid, patch):
         if errors:
             raise AiwosError("update rejected: " + "; ".join(errors))
         st.save_work(new)
+        st.approve_commands([c["run"] for c in new["validation"] if c.get("run")], ctx.actor)
     emit(ctx, "WORK_UPDATED", ["goal:" + new["goal"], "work:" + wid], {"work_id": wid, "fields": sorted(patch)}, "IMPORTANT")
     return new, [w for w in warnings if wid in w["work"]]
 

@@ -26,8 +26,8 @@ os.environ.pop("CLAUDECODE", None)
 os.environ["AIWOS_ACTOR"] = "tester"
 
 
-def git(cwd, *args, check=True):
-    r = subprocess.run(["git"] + list(args), cwd=cwd, capture_output=True, text=True, env=GIT_ENV)
+def git(cwd, *args, check=True, input_text=None):
+    r = subprocess.run(["git"] + list(args), cwd=cwd, capture_output=True, text=True, env=GIT_ENV, input=input_text)
     if check and r.returncode != 0:
         raise AssertionError("git %s: %s" % (args, r.stderr))
     return r.stdout.strip()
